@@ -16,9 +16,15 @@ let Connection = require('./connection')
 * @example
 * // returns 2
 * globalNS.method1(5, 10);
-* @example
-* // returns 3
-* globalNS.method(5, 15);
+* let promise = new Promise((resolve, reject) => {
+*   // do a thing, possibly async, then...
+*   everythingOk = true;
+*   if(everythingOk) {
+*     resolve('Good times')  
+*   } else {
+*       reject('Oh noes!')
+*    }
+* });
 */
 let Neuron = function({
   ID = Neuron.uid(),
