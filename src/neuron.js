@@ -13,6 +13,12 @@ let Connection = require('./connection')
 * @param {SquashFunction} [options.squash]
 * @param {number} [options.rate=0.3]
 * @param {number} [options.bias]
+* @example
+* // returns 2
+* globalNS.method1(5, 10);
+* @example
+* // returns 3
+* globalNS.method(5, 15);
 */
 let Neuron = function({
   ID = Neuron.uid(),
