@@ -14,8 +14,6 @@ let Connection = require('./connection')
 * @param {number} [options.rate=0.3]
 * @param {number} [options.bias]
 * @example
-* // returns 2
-* globalNS.method1(5, 10);
 * let promise = new Promise((resolve, reject) => {
 *   // do a thing, possibly async, then...
 *   everythingOk = true;
