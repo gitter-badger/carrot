@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>trainer.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Connection.html">Connection</a></li><li><a href="Group.html">Group</a></li><li><a href="Layer.html">Layer</a><ul class='methods'><li data-type='method'><a href="Layer.html#connected">connected</a></li><li data-type='method'><a href="Layer.html#neurons">neurons</a></li><li data-type='method'><a href="Layer.html#project">project</a></li><li data-type='method'><a href="Layer.html#reset">reset</a></li></ul></li><li></li><li><a href="Neuron.html">Neuron</a><ul class='methods'><li data-type='method'><a href="Neuron.html#clear">clear</a></li><li data-type='method'><a href="Neuron.html#connected">connected</a></li><li data-type='method'><a href="Neuron.html#reset">reset</a></li><li data-type='method'><a href="Neuron.html#selfconnected">selfconnected</a></li></ul></li></ul><h3>Namespaces</h3><ul><li><a href="Layer_Layer_can.html">can</a><ul class='methods'><li data-type='method'><a href="Layer_Layer_can.html#.activate">activate</a></li><li data-type='method'><a href="Layer_Layer_can.html#.propagate">propagate</a></li></ul></li><li><a href="Layer_Layer_has.html">has</a><ul class='methods'><li data-type='method'><a href="Layer_Layer_has.html#.activated">activated</a></li><li data-type='method'><a href="Layer_Layer_has.html#.propagated">propagated</a></li></ul></li><li><a href="Layer_Layer_is.html">is</a><ul class='methods'><li data-type='method'><a href="Layer_Layer_is.html#.input">input</a></li><li data-type='method'><a href="Layer_Layer_is.html#.output">output</a></li></ul></li><li><a href="Neuron.squash.html">squash</a><ul class='methods'><li data-type='method'><a href="Neuron.squash.html#.HLIM">HLIM</a></li><li data-type='method'><a href="Neuron.squash.html#.IDENTITY">IDENTITY</a></li><li data-type='method'><a href="Neuron.squash.html#.LOGISTIC">LOGISTIC</a></li><li data-type='method'><a href="Neuron.squash.html#.RELU">RELU</a></li><li data-type='method'><a href="Neuron.squash.html#.TANH">TANH</a></li></ul></li><li><a href="Neuron_Neuron_is.html">is</a><ul class='methods'><li data-type='method'><a href="Neuron_Neuron_is.html#.connected">connected</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#_trainSet">_trainSet</a></li><li><a href="global.html#activate">activate</a></li><li><a href="global.html#inputs">inputs</a></li><li><a href="global.html#LayerConnection">LayerConnection</a></li><li><a href="global.html#neurons">neurons</a></li><li><a href="global.html#outputs">outputs</a></li><li><a href="global.html#Perceptron">Perceptron</a></li><li><a href="global.html#reset">reset</a></li><li><a href="global.html#restore">restore</a></li><li><a href="global.html#set">set</a></li><li><a href="global.html#train">train</a></li><li><a href="global.html#XOR">XOR</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">trainer.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>let _ = require('lodash')
+
+let Trainer = function(network, {
+  rate = 0.2,
+  iterations = 100000,
+  error = 0.005,
+  cost = Trainer.cost.MSE,
+  crossValidate,
+  schedule
+} = {}) {
+  _.assignIn(this, { network, rate, iterations, error, cost, crossValidate, schedule });
+  
+  /**
+  * Trains a network on the given set
+  *
+  * @param {Object[]} set
+  * @param {Object} [options]
+  * @param {Network} [options.network]
+  * @param {number} [options.rate]
+  * @param {number} [options.iterations]
+  * @param {number} [options.error]
+  */
+  this.train = function(set, options) {
+    _.assignIn(this, options)
+    
+    let error = 1;
+    let iterations = -1;
+    let start = new Date();
+
+    while (++iterations &lt; this.iterations &amp;&amp; error > this.error) {
+      error = this._trainSet(set, this.rate, cost) / set.length;
+    }
+
+    return { error, iterations, time: Date.now() - start };
+  }
+
+  /** 
+  * Returns the error of one training epoch
+  *
+  * @param {Object[]} set
+  * @param {number} currentRate
+  * @param {CostFunction} costFunction
+  */
+  this._trainSet = function(set, rate, cost) {
+    let self = this;
+    let error = 0;
+    
+    _.each(set, function(target) {
+      let output = self.network.activate(target.input);
+      self.network.propagate(rate, target.output);
+      
+      error += cost(target.output, output);
+    });
+    
+    return error;
+  }
+  
+  /**
+  * Trains an XOR network
+  * 
+  * @param {number} [iterations]
+  * @param {boolean} [log]
+  * @param {boolean} [shuffle]
+  * @param {CostFunction} [cost]
+  */
+  this.XOR = function({
+    iterations = 100000,
+    log = false,
+    shuffle = true,
+    cost = Trainer.cost.MSE
+  } = {}) {
+    if(this.network.inputs() != 2 || this.network.outputs() != 1) throw new Error('Incompatible network (2 inputs, 1 output)');
+
+    return this.train([{
+      input: [0, 0],
+      output: [0]
+    }, {
+      input: [1, 0],
+      output: [1]
+    }, {
+      input: [0, 1],
+      output: [1]
+    }, {
+      input: [1, 1],
+      output: [0]
+    }], { iterations, log, shuffle, cost });
+  }
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Mon Mar 18 2019 02:12:15 GMT+0000 (UTC) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+
+
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>neuron.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Connection.html">Connection</a></li><li><a href="Group.html">Group</a></li><li><a href="Layer.html">Layer</a><ul class='methods'><li data-type='method'><a href="Layer.html#connected">connected</a></li><li data-type='method'><a href="Layer.html#neurons">neurons</a></li><li data-type='method'><a href="Layer.html#project">project</a></li><li data-type='method'><a href="Layer.html#reset">reset</a></li></ul></li><li></li><li><a href="Neuron.html">Neuron</a><ul class='methods'><li data-type='method'><a href="Neuron.html#clear">clear</a></li><li data-type='method'><a href="Neuron.html#connected">connected</a></li><li data-type='method'><a href="Neuron.html#reset">reset</a></li><li data-type='method'><a href="Neuron.html#selfconnected">selfconnected</a></li></ul></li></ul><h3>Namespaces</h3><ul><li><a href="Layer_Layer_can.html">can</a><ul class='methods'><li data-type='method'><a href="Layer_Layer_can.html#.activate">activate</a></li><li data-type='method'><a href="Layer_Layer_can.html#.propagate">propagate</a></li></ul></li><li><a href="Layer_Layer_has.html">has</a><ul class='methods'><li data-type='method'><a href="Layer_Layer_has.html#.activated">activated</a></li><li data-type='method'><a href="Layer_Layer_has.html#.propagated">propagated</a></li></ul></li><li><a href="Layer_Layer_is.html">is</a><ul class='methods'><li data-type='method'><a href="Layer_Layer_is.html#.input">input</a></li><li data-type='method'><a href="Layer_Layer_is.html#.output">output</a></li></ul></li><li><a href="Neuron.squash.html">squash</a><ul class='methods'><li data-type='method'><a href="Neuron.squash.html#.HLIM">HLIM</a></li><li data-type='method'><a href="Neuron.squash.html#.IDENTITY">IDENTITY</a></li><li data-type='method'><a href="Neuron.squash.html#.LOGISTIC">LOGISTIC</a></li><li data-type='method'><a href="Neuron.squash.html#.RELU">RELU</a></li><li data-type='method'><a href="Neuron.squash.html#.TANH">TANH</a></li></ul></li><li><a href="Neuron_Neuron_is.html">is</a><ul class='methods'><li data-type='method'><a href="Neuron_Neuron_is.html#.connected">connected</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#_trainSet">_trainSet</a></li><li><a href="global.html#activate">activate</a></li><li><a href="global.html#inputs">inputs</a></li><li><a href="global.html#LayerConnection">LayerConnection</a></li><li><a href="global.html#neurons">neurons</a></li><li><a href="global.html#outputs">outputs</a></li><li><a href="global.html#Perceptron">Perceptron</a></li><li><a href="global.html#reset">reset</a></li><li><a href="global.html#restore">restore</a></li><li><a href="global.html#set">set</a></li><li><a href="global.html#train">train</a></li><li><a href="global.html#XOR">XOR</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">neuron.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict'
+
+let _ = require('lodash')
+
+let Connection = require('./connection')
+
+/**
+* @constructs Neuron
+* @param {Object} [options]
+* @param {Object} [connections]
+* @param {Connection[]} [connections.incoming]
+* @param {Connection[]} [connections.outgoing]
+* @param {SquashFunction} [options.squash]
+* @param {number} [options.rate=0.3]
+* @param {number} [options.bias]
+*/
+let Neuron = function({
+  ID = Neuron.uid(),
+  connections = { inputs: {}, projected: {}, gated: {} },
+  error = { responsibility: 0, projected: 0, gated: 0 },
+  trace = { elegibility: {}, extended: {}, influences: {} },
+  state = 0,
+  old = 0,
+  activation = 0,
+  squash = Neuron.squash.LOGISTIC,
+  neighboors = {},
+  bias = Math.random() * 2 - 1,
+} = {}) {
+  _.assignIn(this, { ID, connections, error, trace, state, old, activation, squash, neighboors, bias })
+  
+  this.selfconnection = new Connection(this, this, 0); // weight = 0 -> not connected
+  
+  /**
+  * @memberof Neuron.prototype
+  * @function Neuron#activate
+  * @param {number} [input]
+  * @returns {number}
+  */
+  self.activate = function(input) {
+    if(!_.isNil(input)) {
+      self.activation = input;
+      self.bias = 0;
+    } else {
+      let sum = self.bias + _.sum(_.map(self.connections.incoming, function(input) {
+        return input.from.activation * input.weight
+      }));
+      [self.activation, self.derivative] = [self.squash(sum), self.squash(sum, true)];
+    }
+    return self.activation;
+  }
+
+  /**
+  * @memberof Neuron.prototype
+  * @function Neuron#propagate
+  * @param {number} [target]
+  */
+  self.propagate = function(target) {
+    if(!_.isNil(target)) self.error = target - self.activation;
+    else self.error = self.derivative * _.sum(_.map(self.connections.outgoing, function(connection) {
+      return connection.to.error * connection.weight;
+    }));
+    
+    _.each(self.connections.incoming, function(input) {
+      input.weight += self.rate * self.error * input.from.activation; 
+    })
+
+    self.bias += self.rate * self.error
+  }
+
+  /**
+  * @memberof Neuron.prototype
+  * @function Neuron#activate
+  * @param {Neuron} neuron
+  * @param {number} [weight]
+  * @returns {Connection}
+  */
+  self.project = function(neuron, weight) {
+    let connection = new Connection({ from: this, to: neuron, weight })
+
+    self.connections.outgoing.push(connection)
+    neuron.connections.incoming.push(connection)
+
+    return connection
+  }
+
+  /**
+  * Returns true iff the neuron is self-connected
+  */
+  this.selfconnected = function() { return this.selfconnection.weight !== 0; }
+  
+  /** 
+  * Returns true iff this neuron connected to given neuron
+  */
+  this.connected = function(neuron) {
+    let result = { type: null, connection: false };
+
+    if(this == neuron) {
+      if(this.selfconnected()) {
+        result.type = 'selfconnection';
+        result.connection = this.selfconnection;
+        return result;
+      } else return false;
+    }
+
+    _.each(this.connections, function(type) {
+      _.each(type, function(connection) {
+        if(connection.to == neuron || connection.from == neuron) {
+          result.type = type;
+          result.connection = connection;
+          return result;
+        }
+      })
+    })
+
+    return false;
+  }
+  
+  /**
+  * Clears neuron's traces
+  */
+  this.clear = function() {
+    _.each(this.trace.elegibility, function(trace) { trace = 0; })
+
+    _.each(this.trace.extended, function(extension) {
+      _.each(extension, function(trace) { trace = 0; })
+    })
+
+    this.error.responsibility = this.error.projected = this.error.gated = 0;
+  }
+  
+  /**
+  * Resets connection weights
+  */
+  this.reset = function() {
+    this.clear();
+
+    _.each(this.connections, function(type) {
+      _.each(type, function(connection) { connection = Math.random() * 2 - 1; })
+    })
+
+    this.bias = Math.random() * 2 - 1;
+    this.old = this.state = this.activation = 0;
+  }
+  
+  /**
+  * @memberof Neuron.prototype
+  * @namespace Neuron#is
+  */
+  self.is = {}
+  
+  /**
+  * @memberof Neuron.prototype
+  * @function Neuron#is.connected
+  * @param {Neuron} neuron
+  * @returns {'self'|'outgoing'|'incoming'|boolean}
+  */
+  self.is.connected = function(neuron) {
+    if(_.isEqual(self, neuron)) return "self";
+
+    _.each(self.connections, function(type,) {
+      _.each(type, function(connection) {
+        if(_.isEqual(connection.to, neuron)) return type; 
+        else if(_.isEqual(connection.from, neuron)) return type;
+      })
+    })
+    
+    return false;
+  }
+}
+/**
+* @memberof Neuron
+* @namespace Neuron.squash
+*/
+Neuron.squash = {
+  /**
+  * @memberof Neuron
+  * @function Neuron.squash.LOGISTIC
+  * @param {number} x
+  * @param {boolean} [derivative]
+  * @returns {number}
+  */
+  LOGISTIC: function(x, derivate) {
+    var fx = 1 / (1 + Math.exp(-x));
+    if (!derivate)
+      return fx;
+    return fx * (1 - fx);
+  },
+  /**
+  * @memberof Neuron
+  * @function Neuron.squash.TANH
+  * @param {number} x
+  * @param {boolean} [derivative]
+  * @returns {number}
+  */
+  TANH: function(x, derivate) {
+    if (derivate)
+      return 1 - Math.pow(Math.tanh(x), 2);
+    return Math.tanh(x);
+  },
+  /**
+  * @memberof Neuron
+  * @function Neuron.squash.IDENTITY
+  * @param {number} x
+  * @param {boolean} [derivative]
+  * @returns {number}
+  */
+  IDENTITY: function(x, derivate) {
+    return derivate ? 1 : x;
+  },
+  /**
+  * @memberof Neuron
+  * @function Neuron.squash.HLIM
+  * @param {number} x
+  * @param {boolean} [derivative]
+  * @returns {number}
+  */
+  HLIM: function(x, derivate) {
+    return derivate ? 1 : x > 0 ? 1 : 0;
+  },
+  /**
+  * @memberof Neuron
+  * @function Neuron.squash.RELU
+  * @param {number} x
+  * @param {boolean} [derivative]
+  * @returns {number}
+  */
+  RELU: function(x, derivate) {
+    if (derivate)
+      return x > 0 ? 1 : 0;
+    return x > 0 ? x : 0;
+  }
+}
+
+module.exports = Neuron</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Mon Mar 18 2019 02:12:15 GMT+0000 (UTC) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+
+
+</body>
+</html>

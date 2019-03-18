@@ -4,7 +4,7 @@
   "description": "A Simple Node.js AI Library for Neural Network",
   "main": "src/index.js",
   "scripts": {
-    "build": "./node_modules/.bin/documentation build src/** -f md > DOCUMENTATION.md",
+    "build": "node_modules/.bin/jsdoc -c jsdoc.json",
     "test": "nodemon ./node_modules/.bin/mocha --reporter spec test/"
   },
   "repository": {
@@ -54,6 +54,7 @@
   "dependencies": {
     "async": "^2.6.1",
     "bluebird": "^3.5.3",
+    "docdash": "^1.0.3",
     "lodash": "^4.17.11",
     "mathjs": "^5.4.0",
     "neo-async": "^2.6.0"
@@ -61,8 +62,8 @@
   "devDependencies": {
     "chai": "^4.2.0",
     "chai-each": "0.0.1",
-    "documentation": "^9.1.1",
     "faker": "^4.1.0",
+    "jsdoc": "^3.5.5",
     "mocha": "^5.2.0",
     "nodemon": "^1.18.7"
   }

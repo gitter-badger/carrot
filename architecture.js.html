@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>architecture.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Connection.html">Connection</a></li><li><a href="Group.html">Group</a></li><li><a href="Layer.html">Layer</a><ul class='methods'><li data-type='method'><a href="Layer.html#connected">connected</a></li><li data-type='method'><a href="Layer.html#neurons">neurons</a></li><li data-type='method'><a href="Layer.html#project">project</a></li><li data-type='method'><a href="Layer.html#reset">reset</a></li></ul></li><li></li><li><a href="Neuron.html">Neuron</a><ul class='methods'><li data-type='method'><a href="Neuron.html#clear">clear</a></li><li data-type='method'><a href="Neuron.html#connected">connected</a></li><li data-type='method'><a href="Neuron.html#reset">reset</a></li><li data-type='method'><a href="Neuron.html#selfconnected">selfconnected</a></li></ul></li></ul><h3>Namespaces</h3><ul><li><a href="Layer_Layer_can.html">can</a><ul class='methods'><li data-type='method'><a href="Layer_Layer_can.html#.activate">activate</a></li><li data-type='method'><a href="Layer_Layer_can.html#.propagate">propagate</a></li></ul></li><li><a href="Layer_Layer_has.html">has</a><ul class='methods'><li data-type='method'><a href="Layer_Layer_has.html#.activated">activated</a></li><li data-type='method'><a href="Layer_Layer_has.html#.propagated">propagated</a></li></ul></li><li><a href="Layer_Layer_is.html">is</a><ul class='methods'><li data-type='method'><a href="Layer_Layer_is.html#.input">input</a></li><li data-type='method'><a href="Layer_Layer_is.html#.output">output</a></li></ul></li><li><a href="Neuron.squash.html">squash</a><ul class='methods'><li data-type='method'><a href="Neuron.squash.html#.HLIM">HLIM</a></li><li data-type='method'><a href="Neuron.squash.html#.IDENTITY">IDENTITY</a></li><li data-type='method'><a href="Neuron.squash.html#.LOGISTIC">LOGISTIC</a></li><li data-type='method'><a href="Neuron.squash.html#.RELU">RELU</a></li><li data-type='method'><a href="Neuron.squash.html#.TANH">TANH</a></li></ul></li><li><a href="Neuron_Neuron_is.html">is</a><ul class='methods'><li data-type='method'><a href="Neuron_Neuron_is.html#.connected">connected</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#_trainSet">_trainSet</a></li><li><a href="global.html#activate">activate</a></li><li><a href="global.html#inputs">inputs</a></li><li><a href="global.html#LayerConnection">LayerConnection</a></li><li><a href="global.html#neurons">neurons</a></li><li><a href="global.html#outputs">outputs</a></li><li><a href="global.html#Perceptron">Perceptron</a></li><li><a href="global.html#reset">reset</a></li><li><a href="global.html#restore">restore</a></li><li><a href="global.html#set">set</a></li><li><a href="global.html#train">train</a></li><li><a href="global.html#XOR">XOR</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">architecture.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>let _ = require('lodash')
+
+let Network = require('./network');
+let Layer = require('./layer');
+
+/**
+* Create a perceptron network
+*
+* @todo Could probably use something like an array's reduce function to be able to accelerate the process of projecting layers to each other.
+*/
+let Perceptron = function() {
+  Network.call(this)
+  
+  let args = Array.from(arguments) // convert arguments to Array
+  
+  if(args.length &lt; 3) throw new Error('not enough layers (minimum 3) !!');
+
+  let input = new Layer(args.shift());
+  let output = new Layer(args.pop());
+  
+  let hidden = [];
+
+  let previous = input;
+  
+  // generate hidden layers
+  _.each(args, function(size) {
+    let layer = new Layer(size);
+    hidden.push(layer);
+    previous.project(layer);
+    previous = layer;
+  })
+  previous.project(output);
+
+  // set layers of the neural network
+  this.set({ input, hidden, output });
+}
+
+let Liquid = function(inputs, hidden, outputs, connections, gates) {
+  
+}
+
+let LSTM = function() {
+  
+}
+
+let Hopfield = function(size) {
+  
+}
+
+module.exports = {
+  Perceptron,
+  LSTM,
+  Liquid,
+  Hopfield
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Mon Mar 18 2019 02:12:15 GMT+0000 (UTC) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+
+
+</body>
+</html>

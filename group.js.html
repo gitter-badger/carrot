@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>group.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Connection.html">Connection</a></li><li><a href="Group.html">Group</a></li><li><a href="Layer.html">Layer</a><ul class='methods'><li data-type='method'><a href="Layer.html#connected">connected</a></li><li data-type='method'><a href="Layer.html#neurons">neurons</a></li><li data-type='method'><a href="Layer.html#project">project</a></li><li data-type='method'><a href="Layer.html#reset">reset</a></li></ul></li><li></li><li><a href="Neuron.html">Neuron</a><ul class='methods'><li data-type='method'><a href="Neuron.html#clear">clear</a></li><li data-type='method'><a href="Neuron.html#connected">connected</a></li><li data-type='method'><a href="Neuron.html#reset">reset</a></li><li data-type='method'><a href="Neuron.html#selfconnected">selfconnected</a></li></ul></li></ul><h3>Namespaces</h3><ul><li><a href="Layer_Layer_can.html">can</a><ul class='methods'><li data-type='method'><a href="Layer_Layer_can.html#.activate">activate</a></li><li data-type='method'><a href="Layer_Layer_can.html#.propagate">propagate</a></li></ul></li><li><a href="Layer_Layer_has.html">has</a><ul class='methods'><li data-type='method'><a href="Layer_Layer_has.html#.activated">activated</a></li><li data-type='method'><a href="Layer_Layer_has.html#.propagated">propagated</a></li></ul></li><li><a href="Layer_Layer_is.html">is</a><ul class='methods'><li data-type='method'><a href="Layer_Layer_is.html#.input">input</a></li><li data-type='method'><a href="Layer_Layer_is.html#.output">output</a></li></ul></li><li><a href="Neuron.squash.html">squash</a><ul class='methods'><li data-type='method'><a href="Neuron.squash.html#.HLIM">HLIM</a></li><li data-type='method'><a href="Neuron.squash.html#.IDENTITY">IDENTITY</a></li><li data-type='method'><a href="Neuron.squash.html#.LOGISTIC">LOGISTIC</a></li><li data-type='method'><a href="Neuron.squash.html#.RELU">RELU</a></li><li data-type='method'><a href="Neuron.squash.html#.TANH">TANH</a></li></ul></li><li><a href="Neuron_Neuron_is.html">is</a><ul class='methods'><li data-type='method'><a href="Neuron_Neuron_is.html#.connected">connected</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#_trainSet">_trainSet</a></li><li><a href="global.html#activate">activate</a></li><li><a href="global.html#inputs">inputs</a></li><li><a href="global.html#LayerConnection">LayerConnection</a></li><li><a href="global.html#neurons">neurons</a></li><li><a href="global.html#outputs">outputs</a></li><li><a href="global.html#Perceptron">Perceptron</a></li><li><a href="global.html#reset">reset</a></li><li><a href="global.html#restore">restore</a></li><li><a href="global.html#set">set</a></li><li><a href="global.html#train">train</a></li><li><a href="global.html#XOR">XOR</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">group.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>`use strict`
+
+let _ = require('lodash')
+let async = require('neo-async')
+let Promise = require('bluebird')
+let Neuron = require('./neuron')
+let Connection = require('./connection')
+
+/**
+* Represents a Group of Neurons.
+* @constructor
+* @param {  } props
+* @param { array } options
+*/
+let Group = function(props, options) {
+  let neurons = []
+
+  if (_.isLength(props)) {
+    _.times(props, function() {
+      neurons.push(new Neuron())
+    })
+  } else if (_.isArray(props)) {
+    neurons = props
+  } else if (_.isPlainObject(props)) {
+    _.times(props.neurons.length, function() {
+      neurons.push(new Neuron())
+    })
+  }
+  
+  return {
+    neurons,
+    // Make all neurons in the Group generate an output value
+    activate: function(inputs, callback) {
+      let self = this
+      return new Promise(function(resolve, reject) {
+        return async.auto({
+          "valid_array": function(callback) {
+            _.isArray(inputs) &amp;&amp; inputs.length === neurons.length ? callback(null, inputs) : inputs ? callback('Error at Group.activate(): Invalid Parameter Received', null) : callback(null, false)
+          },
+          "activate_neurons": ["valid_array", function(results, callback) {
+            if (results.valid_array) {
+              async.eachOf(neurons, function(neuron, i, callback) {
+                neuron.activate(inputs[i], callback)
+              }, callback)
+            } else {
+              async.each(neurons, function(neuron, callback) {
+                neuron.activate(null, callback)
+              }, callback)
+            }
+          }]
+        }, function(error, results) {
+          return callback ? callback(error, results.activate_neurons) : !error ? resolve(results.activate_neurons) : reject(error)
+        })
+      })
+    },
+    // Sends output of inbound connections to neurons of outbound connections
+    forward: function(values, callback) {
+      let self = this
+      return new Promise(function(resolve, reject){
+        return async.auto({
+          "valid_array": function(callback) {
+            _.isArray(values) &amp;&amp; values.length === neurons.length ? callback(null, values) : values ? callback('Error at Group.activate(): Invalid Parameter Received', null) : callback(null, false)
+          },
+          "values_forward": ["valid_array", function(results, callback) {
+            if (results.valid_array) {
+              async.eachOf(neurons, function(neuron, i, callback) {
+                neuron.forward(values[i], callback)
+              }, callback)
+            } else {
+              // send last input state values to next Group neurons
+              async.each(neurons, function(neuron, callback) {
+                neuron.inputs(function(error, input_connections) {
+                  async.each(input_connections, function(input_connection, callback) {
+                    neuron.forward(_.last(input_connection.forward.states), callback)
+                  }, callback)
+                })
+              }, callback)
+            }
+          }]
+        }, function(error, results) {
+          return callback ? callback(error, results.values_forward) : !error ? resolve(results.values_forward) : reject(error)
+        })
+      })
+    },
+    // Sends output of outbound connections to neurons of inbound connections
+    backward: function(values, callback) {
+      let self = this
+      return new Promise(function(resolve, reject){
+        return async.auto({
+          "valid_array": function(callback) {
+            _.isArray(values) &amp;&amp; values.length === neurons.length ? callback(null, values) : values ? callback('Error at Group.activate(): Invalid Parameter Received', null) : callback(null, false)
+          },
+          "values_backward": ["valid_array", function(results, callback) {
+            if (results.valid_array) {
+              async.eachOf(neurons, function(neuron, i, callback) {
+                neuron.backward(values[i], callback)
+              }, callback)
+            } else {
+              // send last output state value to previous layer neurons
+              async.each(neurons, function(neuron, callback) {
+                neuron.outputs(function(error, output_connections) {
+                  async.each(output_connections, function(output_connection, callback) {
+                    neuron.backward(_.last(output_connection.backward.states), callback)
+                  }, callback)
+                })
+              }, callback)
+            }
+          }]
+        }, function(error, results) {
+          return callback ? callback(error, results.values_backward) : !error ? resolve(results.values_backward) : reject(error)
+        })
+      })
+    },
+    // Connects neurons in this Group to an object's neuron(s)
+    connect: function(object, callback) {
+      let self = this
+      return new Promise(function(resolve, reject) {
+        return async.auto({
+          "neuron": function(callback) {
+            _.isArray(object.connections) ? callback(null, object) : callback(null, false)
+          },
+          "layer": function(callback) {
+            _.isArray(object.neurons) ? callback(null, object.neurons) : callback(null, false)
+          },
+          "group": function(callback) {
+            _.isPlainObject(object.neurons) ? callback(null, object.neurons) : callback(null, false)
+          },
+          "connect_neurons": ["neuron", "layer", "group", function(results, callback) {
+            if (results.neuron) {
+              async.each(self.neurons, function(self_neuron, callback) {
+                self_neuron.connect(results.neuron, callback)
+              }, callback)
+            } else if (results.layer) {
+              async.each(results.layer, function(target_neuron, callback) {
+                async.each(self.neurons, function(self_neuron, callback) {
+                  self_neuron.connect(target_neuron, callback)
+                }, callback)
+              }, callback)
+            } else if (results.group) {
+              async.each(results.group, function(target_neuron, callback) {
+                async.each(self.neurons, function(self_neuron, callback) {
+                  self_neuron.connect(target_neuron, callback)
+                }, callback)
+              }, callback)
+            } else {
+              callback('Error at Layer.connect(): Unsupported Parameter Received', null)
+            }
+          }],
+        }, function(error, results) {
+          return callback ? callback(error, self.neurons) : !error ? resolve(self.neurons) : reject(error)
+        })
+      })
+    },
+    // Gate
+    gate: function(callback) {
+    },
+    // Add neurons to this Group
+    add_neurons: function(new_neurons, callback) {
+      let self = this
+      return new Promise(function(resolve, reject) {
+        return async.auto({
+          "is_array": function(callback) {
+            _.isArray(new_neurons) ? callback(null, new_neurons) : callback(null, false)
+          },
+          "is_number": function(callback) {
+            _.isLength(new_neurons) ? callback(null, new_neurons) : callback(null, false)
+          },
+          "add_neurons": ["is_array", "is_number", function(results, callback) {
+            if (results.is_array) {
+              async.each(results.is_array, function(new_neuron, callback) {
+                self.neurons.push(new_neuron, callback)
+              }, callback)
+            } else if(results.is_number) {
+              async.times(results.is_number, function(n, next) {
+                next(null, self.neurons.push(new Neuron()))
+              }, callback)
+            } else {
+              callback("Error at Layer.add_neurons(): Invalid Parameter Received", null)
+            }
+          }]
+        }, function(error, results) {
+          return callback ? callback(error, self.neurons) : !error ? resolve(self.neurons) : reject(error)
+        })
+      })
+    },
+    // Search for neurons with the supplied name
+    get_neuron: function(name, callback) {
+      let self = this
+      return new Promise(function(resolve, reject) {
+        return async.filter(neurons, function(neuron, callback) {
+          callback(null, neuron.Name.toUpperCase() === name.toUpperCase())
+        }, function(error, neurons) {
+          return callback ? callback(error, neurons) : !error ? resolve(neurons) : reject(error)
+        })
+      })
+    },
+  }
+}
+
+module.exports = Group</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Mon Mar 18 2019 02:12:15 GMT+0000 (UTC) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+
+
+</body>
+</html>
